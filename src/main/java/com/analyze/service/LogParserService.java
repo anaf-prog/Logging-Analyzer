@@ -1,0 +1,284 @@
+package com.analyze.service;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.springframework.stereotype.Service;
+import com.analyze.entity.LogError;
+import com.analyze.entity.ProductMonitorConfig;
+import com.analyze.entity.ResponseFormat;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Service untuk parsing baris log menjadi objek error.
+ *
+ * <p>
+ * Relasi: memakai {@link ProductMonitorConfig} sebagai aturan parsing,
+ * menggunakan parser JSON/XML, lalu menghasilkan {@link LogError} untuk proses
+ * lanjutan.
+ * </p>
+ */
+@Service
+@Slf4j
+public class LogParserService {
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private XmlMapper xmlMapper = new XmlMapper();
+    
+    /**
+     * Parse satu baris log sesuai konfigurasi produk.
+     */
+    public Optional<LogError> parse(String line, ProductMonitorConfig config) {
+
+        try {
+            String payload = extractPayload(line, config.getResponseFormat());
+
+            if (payload == null) {
+                return Optional.empty();
+            }
+
+            JsonNode payloadNode = readPayload(payload, config.getResponseFormat());
+
+            String codeValue = readConfiguredValue(payloadNode, config.getCodeField(), "code");
+            String rcValue = readConfiguredValue(payloadNode, config.getRcField(), "rc");
+            String status = firstNonBlank(codeValue, rcValue, findTextIgnoreCase(payloadNode, "Status"));
+            String errorMessage = findTextIgnoreCase(payloadNode, "ErrorMessage");
+
+            if (!hasDecisionField(config, codeValue, rcValue, status)) {
+                return Optional.empty();
+            }
+
+            if (isSuccess(codeValue, rcValue, status)) {
+                return Optional.empty();
+            }
+
+            LogError logError = new LogError();
+            logError.setLevel("ERROR");
+            logError.setMessage(payload);
+            logError.setLogTime(extractTimestamp(line));
+            logError.setProductName(config.getProductName());
+
+            String stanValue = findTextIgnoreCase(payloadNode, "stan");
+            if (!stanValue.isBlank()) {
+                logError.setIdentifier(stanValue);
+            } else {
+                logError.setIdentifier(extractIdentifier(line));
+            }
+            
+
+            log.debug("""
+                    ========== ERROR PAYMENT ==========
+                    IDENTIFIER   : {}
+                    STATUS       : {}
+                    CODE         : {}
+                    RC           : {}
+                    ERROR MSG    : {}
+                    PRODUCT      : {}
+                    FULL RESPONSE: {}
+                    ==================================
+                    """,
+                    logError.getIdentifier(),
+                    status,
+                    codeValue,
+                    rcValue,
+                    errorMessage,
+                    config.getProductName(),
+                    payload);
+
+            return Optional.of(logError);
+
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("Unexpected EOF") || msg.contains("prolog")) {
+                log.warn("PARSE WARNING: Payload terpotong atau tidak valid di baris: {}...", line.substring(0, Math.min(line.length(), 50)));
+            } else {
+                log.error("PARSE ERROR", e);
+            }
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Ambil timestamp dari baris log.
+     */
+    private LocalDateTime extractTimestamp(String line) {
+        try {
+            // Cek format (2026-04-11 01:22:15)
+            if (line.length() >= 19 && Character.isDigit(line.charAt(0)) && line.charAt(4) == '-') {
+                return LocalDateTime.parse(line.substring(0, 19).replace(" ", "T"));
+            }
+
+            // Cek format (at="2026-03-17T04:51:47")
+            if (line.contains("at=\"")) {
+                int start = line.indexOf("at=\"") + 4;
+                if (line.length() >= start + 19) {
+                    return LocalDateTime.parse(line.substring(start, start + 19));
+                }
+            }
+        } catch (Exception e) {
+            // Jika gagal parse, biarkan lanjut ke fallback
+        }
+        return LocalDateTime.now(); // Fallback jika tidak ditemukan format tanggal
+    }
+
+    /**
+     * Ekstrak payload utama (XML/JSON) dari baris log.
+     */
+    private String extractPayload(String line, ResponseFormat responseFormat) {
+        if (responseFormat == ResponseFormat.XML) {
+            // HANYA ambil kalau ada prolog <?xml
+            int start = line.indexOf("<?xml");
+
+            if (start != -1) {
+                int end = line.lastIndexOf('>');
+                if (end > start) {
+                    return line.substring(start, end + 1);
+                }
+            }
+            // Kalau gak ada <?xml, langsung return null
+            return null;
+        }
+
+        // JSON tetep cari { }
+        return extractDelimitedBlock(line, '{', '}');
+    }
+
+    /**
+     * Ambil blok teks di antara token pembuka dan penutup.
+     */
+    private String extractDelimitedBlock(String line, char startToken, char endToken) {
+        int start = line.indexOf(startToken);
+        int end = line.lastIndexOf(endToken);
+
+        if (start != -1 && end != -1 && end > start) {
+            return line.substring(start, end + 1);
+        }
+        return null;
+    }
+
+    /**
+     * Baca payload ke struktur {@link JsonNode}.
+     */
+    private JsonNode readPayload(String payload, ResponseFormat responseFormat) throws Exception {
+        if (responseFormat == ResponseFormat.XML) {
+            return xmlMapper.readTree(payload.getBytes());
+        }
+        return objectMapper.readTree(payload);
+    }
+
+    /**
+     * Ambil identifier numerik dari teks log.
+     */
+    private String extractIdentifier(String message) {
+        Pattern pattern = Pattern.compile("(\\d{10,})");
+        Matcher matcher = pattern.matcher(message);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
+    }
+
+    /**
+     * Ambil nilai field berdasarkan konfigurasi, lalu fallback ke field default.
+     */
+    private String readConfiguredValue(JsonNode node, String configuredFieldName, String defaultFieldName) {
+        String configuredValue = findTextIgnoreCase(node, configuredFieldName);
+        if (!configuredValue.isBlank()) {
+            return configuredValue;
+        }
+        return findTextIgnoreCase(node, defaultFieldName);
+    }
+
+    /**
+     * Tentukan hasil sukses/gagal dari code/rc/status.
+     */
+    private boolean isSuccess(String codeValue, String rcValue, String statusValue) {
+        boolean hasCode = !codeValue.isBlank();
+        boolean hasRc = !rcValue.isBlank();
+
+        if (hasCode || hasRc) {
+            boolean codeOk = !hasCode || "0000".equals(codeValue);
+            boolean rcOk = !hasRc || "0000".equals(rcValue);
+            return codeOk && rcOk;
+        }
+
+        return "0000".equals(statusValue);
+    }
+
+    /**
+     * Cek apakah field keputusan tersedia sebelum evaluasi status.
+     */
+    private boolean hasDecisionField(ProductMonitorConfig config, String codeValue, String rcValue, String statusValue) {
+        boolean codeConfigured = config.getCodeField() != null && !config.getCodeField().isBlank();
+        boolean rcConfigured = config.getRcField() != null && !config.getRcField().isBlank();
+
+        if (codeConfigured || rcConfigured) {
+            boolean codePresent = !codeValue.isBlank();
+            boolean rcPresent = !rcValue.isBlank();
+            return codePresent || rcPresent;
+        }
+
+        return !statusValue.isBlank();
+    }
+
+    /**
+     * Ambil nilai pertama yang tidak kosong.
+     */
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Cari nilai field secara rekursif tanpa sensitif huruf besar-kecil.
+     */
+    private String findTextIgnoreCase(JsonNode node, String fieldName) {
+        if (fieldName == null || fieldName.isBlank()) {
+            return "";
+        }
+
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return "";
+        }
+
+        if (node.isObject()) {
+            if (node.has(fieldName)) {
+                return node.path(fieldName).asText("");
+            }
+
+            var fieldIterator = node.fields();
+            while (fieldIterator.hasNext()) {
+                var entry = fieldIterator.next();
+                if (entry.getKey().equalsIgnoreCase(fieldName)) {
+                    return entry.getValue().asText("");
+                }
+
+                String nestedValue = findTextIgnoreCase(entry.getValue(), fieldName);
+                if (!nestedValue.isBlank()) {
+                    return nestedValue;
+                }
+            }
+        }
+
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                String nestedValue = findTextIgnoreCase(item, fieldName);
+                if (!nestedValue.isBlank()) {
+                    return nestedValue;
+                }
+            }
+        }
+
+        return "";
+    }
+}
