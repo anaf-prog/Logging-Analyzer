@@ -1,6 +1,10 @@
+// File utama (dashboard.js)
 // Data latestErrors dari controller (Thymeleaf inline)
 let latestErrors = [];
 let monitorConfigs = [];
+
+// Variabel untuk menyimpan callback delete
+let pendingDeleteId = null;
 
 // Fungsi untuk format waktu
 function formatTime(dateTimeString) {
@@ -38,6 +42,10 @@ function populateLatestErrorsTable(errors) {
     });
 }
 
+/**
+ * Mengisi tabel konfigurasi monitor dengan data dari server
+ * Juga membuat tombol aksi (Scan, Edit, Hapus) untuk setiap baris
+ */
 function populateMonitorConfigsTable(configs) {
     const tableBody = document.getElementById('monitorConfigsTableBody');
     if (!tableBody) {
@@ -65,6 +73,26 @@ function populateMonitorConfigsTable(configs) {
         row.insertCell().textContent = config.enabled ? 'Aktif' : 'Nonaktif';
 
         const actionCell = row.insertCell();
+        actionCell.className = 'text-nowrap';
+
+        const btnContainer = document.createElement('div');
+        btnContainer.className = 'd-flex flex-wrap gap-2';
+
+        const scanButton = document.createElement('button');
+        scanButton.type = 'button';
+        scanButton.className = 'btn btn-sm btn-outline-success';
+        scanButton.textContent = 'Scan Sekarang';
+        scanButton.addEventListener('click', async function () {
+            try {
+                showFormMessage(`Menjalankan scan log untuk ${config.productName || 'produk'}...`);
+                await triggerScan();
+                await loadLatestErrors();
+                showFormMessage(`Scan log untuk ${config.productName || 'produk'} selesai dijalankan.`);
+            } catch (error) {
+                showFormMessage(error.message, true);
+            }
+        });
+
         const editButton = document.createElement('button');
         editButton.type = 'button';
         editButton.className = 'btn btn-sm btn-outline-primary me-2';
@@ -81,8 +109,11 @@ function populateMonitorConfigsTable(configs) {
             deleteMonitorConfig(config.id);
         });
 
-        actionCell.appendChild(editButton);
-        actionCell.appendChild(deleteButton);
+        btnContainer.appendChild(scanButton);
+        btnContainer.appendChild(editButton);
+        btnContainer.appendChild(deleteButton);
+
+        actionCell.appendChild(btnContainer);
     });
 }
 
@@ -97,6 +128,7 @@ function initDataFromServer(serverData) {
     }
 }
 
+// Mengisi data awal konfigurasi monitor dari server 
 function initMonitorConfigsFromServer(serverData) {
     if (serverData && Array.isArray(serverData)) {
         monitorConfigs = serverData;
@@ -107,16 +139,10 @@ function initMonitorConfigsFromServer(serverData) {
     }
 }
 
-function showFormMessage(message, isError = false) {
-    const messageElement = document.getElementById('configFormMessage');
-    if (!messageElement) {
-        return;
-    }
-
-    messageElement.textContent = message;
-    messageElement.className = isError ? 'small text-danger' : 'small text-success';
-}
-
+/**
+ * Memuat ulang data konfigurasi monitor dari API (GET /api/monitor-configs)
+ * Digunakan setelah create/update/delete untuk refresh tabel
+ */
 async function loadMonitorConfigs() {
     const response = await fetch('/api/monitor-configs');
     if (!response.ok) {
@@ -127,6 +153,7 @@ async function loadMonitorConfigs() {
     populateMonitorConfigsTable(monitorConfigs);
 }
 
+// Memuat ulang data error terbaru dari API (GET /dashboard/api/latest-errors)
 async function loadLatestErrors() {
     const response = await fetch('/dashboard/api/latest-errors');
     if (!response.ok) {
@@ -137,6 +164,7 @@ async function loadLatestErrors() {
     populateLatestErrorsTable(latestErrors);
 }
 
+// Menyimpan konfigurasi monitor baru ke server (POST /api/monitor-configs)
 async function createMonitorConfig(payload) {
     const response = await fetch('/api/monitor-configs', {
         method: 'POST',
@@ -153,6 +181,7 @@ async function createMonitorConfig(payload) {
     return response.json();
 }
 
+// Memperbarui konfigurasi monitor yang sudah ada di server (PUT /api/monitor-configs/{id})
 async function updateMonitorConfig(id, payload) {
     const response = await fetch(`/api/monitor-configs/${id}`, {
         method: 'PUT',
@@ -169,23 +198,30 @@ async function updateMonitorConfig(id, payload) {
     return response.json();
 }
 
+// Menghapus konfigurasi monitor (munculkan dialog konfirmasi dulu, lalu DELETE ke server)
 async function deleteMonitorConfig(id) {
-    if (!confirm('Hapus konfigurasi monitor ini?')) {
-        return;
-    }
+    const config = monitorConfigs.find(c => c.id === id);
+    const productName = config?.productName || 'konfigurasi ini';
 
-    const response = await fetch(`/api/monitor-configs/${id}`, {
-        method: 'DELETE'
+    showConfirmDialog(`Yakin ingin menghapus konfigurasi ${productName}?`, async () => {
+        try {
+            const response = await fetch(`/api/monitor-configs/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal menghapus konfigurasi monitor');
+            }
+
+            await loadMonitorConfigs();
+            showFormMessage(`Konfigurasi ${productName} berhasil dihapus.`);
+        } catch (error) {
+            showFormMessage(error.message, true);
+        }
     });
-
-    if (!response.ok) {
-        alert('Gagal menghapus konfigurasi monitor');
-        return;
-    }
-
-    await loadMonitorConfigs();
 }
 
+// Mengosongkan/mereset form tambah/edit konfigurasi monitor
 function resetMonitorConfigForm() {
     const form = document.getElementById('monitorConfigForm');
     const cancelEditButton = document.getElementById('cancelEditButton');
@@ -209,6 +245,7 @@ function resetMonitorConfigForm() {
     }
 }
 
+// Mengisi form dengan data konfigurasi yang akan diedit (mode edit)
 function startEditMonitorConfig(config) {
     const form = document.getElementById('monitorConfigForm');
     const cancelEditButton = document.getElementById('cancelEditButton');
@@ -234,6 +271,7 @@ function startEditMonitorConfig(config) {
     }
 }
 
+//  Menjalankan scan log secara manual (POST /log/scan)
 async function triggerScan() {
     const response = await fetch('/log/scan', {
         method: 'POST'
@@ -246,9 +284,9 @@ async function triggerScan() {
     return response.text();
 }
 
+// Submit form (create/update) dan tombol batal edit
 function bindMonitorConfigForm() {
     const form = document.getElementById('monitorConfigForm');
-    const scanNowButton = document.getElementById('scanNowButton');
     const cancelEditButton = document.getElementById('cancelEditButton');
 
     if (form) {
@@ -273,19 +311,6 @@ function bindMonitorConfigForm() {
                 }
                 resetMonitorConfigForm();
                 await loadMonitorConfigs();
-            } catch (error) {
-                showFormMessage(error.message, true);
-            }
-        });
-    }
-
-    if (scanNowButton) {
-        scanNowButton.addEventListener('click', async function () {
-            try {
-                showFormMessage('Menjalankan scan log...');
-                await triggerScan();
-                await loadLatestErrors();
-                showFormMessage('Scan log selesai dijalankan.');
             } catch (error) {
                 showFormMessage(error.message, true);
             }
