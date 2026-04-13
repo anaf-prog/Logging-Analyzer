@@ -58,6 +58,7 @@
                                 <select class="form-select" id="responseFormat" name="responseFormat" required>
                                     <option value="JSON">JSON</option>
                                     <option value="XML">XML</option>
+                                    <option value="AUTO">Auto Detect</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -68,6 +69,17 @@
                                 <label for="rcField" class="form-label">Skip Field RC</label>
                                 <input type="text" class="form-control" id="rcField" name="rcField" placeholder="Contoh: 0000">
                             </div>
+
+                            <div class="col-md-4" id="jsonPrefixDiv" style="display: none;">
+                                <label for="jsonPrefix" class="form-label">JSON Prefix </label>
+                                <input type="text" class="form-control" id="jsonPrefix" name="jsonPrefix" placeholder="Contoh: data=, RESPONSE INQUIRY">
+                            </div>
+                            
+                            <div class="col-md-4" id="xmlWrapperDiv" style="display: none;">
+                                <label for="xmlWrapperTag" class="form-label">XML Wrapper Tag</label>
+                                <input type="text" class="form-control" id="xmlWrapperTag" name="xmlWrapperTag" placeholder="Contoh: log, response">
+                            </div>
+
                             <div class="col-12 d-flex gap-2 align-items-center flex-wrap">
                                 <button type="submit" id="saveConfigButton" class="btn btn-primary">Simpan Konfigurasi</button>
                                 <button type="button" id="cancelEditButton" class="btn btn-outline-secondary d-none">Batal Edit</button>
@@ -85,27 +97,29 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover align-middle">
+                            <table class="table table-striped table-hover align-middle custom-table">
                                 <thead>
                                     <tr>
-                                        <th>Nama Produk</th>
-                                        <th>Path Dipantau</th>
-                                        <th>Format</th>
-                                        <th>Skip Field Code</th>
-                                        <th>Skip Field RC</th>
-                                        <th>Status</th>
-                                        <th>Aksi</th>
+                                        <th style="width: 10%;">Nama Produk</th>
+                                        <th style="width: 25%;">Path Dipantau</th>
+                                        <th style="width: 8%;">Format</th>
+                                        <th style="width: 10%;">JSON Prefix</th>
+                                        <th style="width: 10%;">XML Wrapper</th>
+                                        <th style="width: 10%;">Skip Code</th>
+                                        <th style="width: 10%;">Skip RC</th>
+                                        <th style="width: 7%;">Status</th>
+                                        <th style="width: 10%;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="monitorConfigsTableBody">
                                     <tr th:if="${#lists.isEmpty(monitorConfigs)}">
-                                        <td colspan="7" class="text-center text-muted">Belum ada konfigurasi monitor</td>
+                                        <td colspan="9" class="text-center text-muted">Belum ada konfigurasi monitor</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>
+                </div>      
             </div>
 
             <!-- Tabel Log Error Terbaru -->
@@ -170,8 +184,10 @@
     </script>
 
     <!-- Custom JavaScript -->
-    <script src="/js/dashboard-notification.js"></script>
-    <script src="/js/dashboard.js"></script>
+    <script src="/js/dashboard-notification.js?v=2" defer></script>
+    <script src="/js/dashboard.js?v=2" defer></script>
+    <script src="/js/dashboard-monitor.js?v=2" defer></script>
+    <script src="/js/dynamic-form.js?v=2" defer></script>
 </body>
 
 </html>

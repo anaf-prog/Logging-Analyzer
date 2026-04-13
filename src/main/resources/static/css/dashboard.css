@@ -45,6 +45,10 @@ body {
 /* Perbaiki tampilan tabel */
 .table-responsive {
     overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
 }
 
 .table th {
@@ -173,4 +177,48 @@ body {
         transform: translateY(0);
         opacity: 1;
     }
+}
+
+
+/* Pengaturan Tabel Khusus */
+.custom-table {
+    table-layout: auto;
+    width: 100%;
+    /* Beri lebar minimal agar tabel tidak gepeng saat layar kecil */
+    min-width: 1000px;
+}
+
+.custom-table th,
+.custom-table td {
+    vertical-align: middle;
+    white-space: nowrap;
+    /* Default kolom lain tidak bungkus baris */
+    padding: 12px 8px;
+}
+
+/* Khusus untuk kolom Path agar bisa sedikit lebih fleksibel namun tetap rapi */
+.custom-table td:nth-child(2) {
+    white-space: normal;
+    word-break: break-all;
+    min-width: 300px;
+    /* Lebar khusus untuk kolom path */
+    max-width: 400px;
+}
+
+/* Supaya tombol aksi tidak terpotong */
+.custom-table td:last-child {
+    overflow: visible;
+    white-space: normal;
+}
+
+/* Badge status agar lebih menarik */
+.status-aktif {
+    color: #28a745;
+    font-weight: bold;
+}
+
+/* Tombol Aksi */
+.btn-action-group .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
 }
