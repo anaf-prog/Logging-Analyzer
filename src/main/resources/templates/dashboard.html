@@ -10,6 +10,7 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/dashboard-modal-delete.css">
 </head>
 
 <body>
@@ -156,21 +157,7 @@
         </div>
 
         <!-- Modal Konfirmasi Hapus -->
-        <div id="deleteConfirmModal" class="modal-custom" style="display: none;">
-            <div class="modal-custom-overlay"></div>
-            <div class="modal-custom-container">
-                <div class="modal-custom-header">
-                    <h5 class="modal-custom-title">Konfirmasi Hapus</h5>
-                </div>
-                <div class="modal-custom-body">
-                    <p id="deleteConfirmMessage">Yakin ingin menghapus?</p>
-                </div>
-                <div class="modal-custom-footer">
-                    <button type="button" id="modalCancelBtn" class="btn-modal btn-modal-secondary">Batal</button>
-                    <button type="button" id="modalConfirmBtn" class="btn-modal btn-modal-danger">Hapus</button>
-                </div>
-            </div>
-        </div>
+        <div th:replace="~{fragments/dashboard-modal-delete :: deleteModal}"></div>
 
     </div>
 
