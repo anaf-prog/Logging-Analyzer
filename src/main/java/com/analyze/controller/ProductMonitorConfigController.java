@@ -55,7 +55,9 @@ public class ProductMonitorConfigController {
                 request.path(),
                 request.responseFormat(),
                 request.codeField(),
-                request.rcField());
+                request.rcField(),
+                request.jsonPrefix(),
+                request.xmlWrapperTag());
     }
 
     /**
@@ -69,7 +71,9 @@ public class ProductMonitorConfigController {
                 request.path(),
                 request.responseFormat(),
                 request.codeField(),
-                request.rcField());
+                request.rcField(),
+                request.jsonPrefix(),
+                request.xmlWrapperTag());
     }
 
     /**
@@ -89,6 +93,8 @@ public class ProductMonitorConfigController {
             @NotBlank String path,
             @NotNull ResponseFormat responseFormat,
             String codeField,
-            String rcField) {
+            String rcField,
+            String jsonPrefix,     
+            String xmlWrapperTag) {
     }
 }

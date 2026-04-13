@@ -38,6 +38,12 @@ public class ProductMonitorConfig {
     @Column(name = "rc_field", length = 100)
     private String rcField;
 
+     @Column(name = "json_prefix", length = 100)
+    private String jsonPrefix;
+    
+    @Column(name = "xml_wrapper_tag", length = 100)
+    private String xmlWrapperTag;
+
     @Column(nullable = false)
     private boolean enabled = true;
 

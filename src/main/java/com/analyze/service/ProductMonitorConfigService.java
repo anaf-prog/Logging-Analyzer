@@ -38,9 +38,9 @@ public class ProductMonitorConfigService {
      * Membuat konfigurasi monitor produk baru.
      */
     @Transactional
-    public ProductMonitorConfig create(String productName, String path, ResponseFormat responseFormat, String codeField, String rcField) {
+    public ProductMonitorConfig create(String productName, String path, ResponseFormat responseFormat, String codeField, String rcField, String jsonPrefix, String xmlWrapperTag) {
         ProductMonitorConfig config = new ProductMonitorConfig();
-        applyValues(config, productName, path, responseFormat, codeField, rcField);
+        applyValues(config, productName, path, responseFormat, codeField, rcField, jsonPrefix, xmlWrapperTag);
         return repository.save(config);
     }
 
@@ -48,10 +48,10 @@ public class ProductMonitorConfigService {
      * Memperbarui konfigurasi berdasarkan ID.
      */
     @Transactional
-    public ProductMonitorConfig update(Long id, String productName, String path, ResponseFormat responseFormat, String codeField, String rcField) {
+    public ProductMonitorConfig update(Long id, String productName, String path, ResponseFormat responseFormat, String codeField, String rcField, String jsonPrefix, String xmlWrapperTag) {
         ProductMonitorConfig config = repository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Config monitor tidak ditemukan: " + id));
-        applyValues(config, productName, path, responseFormat, codeField, rcField);
+        applyValues(config, productName, path, responseFormat, codeField, rcField, jsonPrefix, xmlWrapperTag);
         return repository.save(config);
     }
 
@@ -66,12 +66,14 @@ public class ProductMonitorConfigService {
     /**
      * Menerapkan nilai input ke entitas konfigurasi.
      */
-    private void applyValues(ProductMonitorConfig config, String productName, String path, ResponseFormat responseFormat, String codeField, String rcField) {
+    private void applyValues(ProductMonitorConfig config, String productName, String path, ResponseFormat responseFormat, String codeField, String rcField, String jsonPrefix, String xmlWrapperTag) {
         config.setProductName(productName.trim());
         config.setPath(path.trim());
         config.setResponseFormat(responseFormat);
         config.setCodeField(normalizeFieldName(codeField));
         config.setRcField(normalizeFieldName(rcField));
+        config.setJsonPrefix(normalizeFieldName(jsonPrefix));
+        config.setXmlWrapperTag(normalizeFieldName(xmlWrapperTag));
         config.setEnabled(true);
     }
 

@@ -35,7 +35,7 @@ public class LogParserService {
     public Optional<LogError> parse(String line, ProductMonitorConfig config) {
 
         try {
-            String payload = extractPayload(line, config.getResponseFormat());
+            String payload = extractPayload(line, config);
 
             if (payload == null) {
                 return Optional.empty();
@@ -128,32 +128,47 @@ public class LogParserService {
     /**
      * Ekstrak payload utama (XML/JSON) dari baris log.
      */
-    private String extractPayload(String line, ResponseFormat responseFormat) {
-        if (responseFormat == ResponseFormat.XML) {
-            // HANYA ambil kalau ada prolog <?xml
-            int start = line.indexOf("<?xml");
+    private String extractPayload(String line, ProductMonitorConfig config) {
+        ResponseFormat format = config.getResponseFormat();
 
-            if (start != -1) {
-                int end = line.lastIndexOf('>');
-                if (end > start) {
-                    return line.substring(start, end + 1);
-                }
-            }
-            // Kalau gak ada <?xml, langsung return null
-            return null;
+        if (format == ResponseFormat.XML) {
+            return extractXmlPayload(line, config.getXmlWrapperTag());
+        } else if (format == ResponseFormat.JSON) {
+            return extractJsonPayload(line, config.getJsonPrefix());
+        } else { // AUTO
+            String json = extractJsonPayload(line, config.getJsonPrefix());
+            if (json != null)
+                return json;
+            return extractXmlPayload(line, config.getXmlWrapperTag());
         }
-
-        // JSON tetep cari { }
-        return extractDelimitedBlock(line, '{', '}');
     }
 
-    /**
-     * Ambil blok teks di antara token pembuka dan penutup.
-     */
+    private String extractJsonPayload(String line, String prefix) {
+        String searchLine = line;
+        if (prefix != null && !prefix.isBlank() && line.contains(prefix)) {
+            searchLine = line.substring(line.indexOf(prefix) + prefix.length());
+        }
+        return extractDelimitedBlock(searchLine, '{', '}');
+    }
+
+    private String extractXmlPayload(String line, String wrapperTag) {
+        String searchTag = (wrapperTag != null && !wrapperTag.isBlank()) ? "<" + wrapperTag : "<";
+        int start = line.indexOf(searchTag);
+        if (start == -1 && wrapperTag == null) {
+            start = line.indexOf("<?xml");
+        }
+        if (start != -1) {
+            int end = line.lastIndexOf('>');
+            if (end > start) {
+                return line.substring(start, end + 1);
+            }
+        }
+        return null;
+    }
+
     private String extractDelimitedBlock(String line, char startToken, char endToken) {
         int start = line.indexOf(startToken);
         int end = line.lastIndexOf(endToken);
-
         if (start != -1 && end != -1 && end > start) {
             return line.substring(start, end + 1);
         }
