@@ -131,9 +131,27 @@
             <!-- Tabel Log Error Terbaru -->
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        Log Error
+
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Log Error</span>
+                        <div class="d-flex gap-2">
+                            <select id="filterProductName" class="form-select form-select-sm" style="width: 150px;">
+                                <option value="">Semua Produk</option>
+                            </select>
+                    
+                            <input type="text" id="searchLogMessage" class="form-control form-control-sm"
+                                placeholder="Cari pesan atau identifier..." style="width: 250px;">
+                    
+                            <button class="btn btn-sm btn-success" type="button" id="btnSearchLog">
+                                <i class="bi bi-search"></i> Cari
+                            </button>
+                    
+                            <button class="btn btn-sm btn-secondary" type="button" id="btnResetFilter">
+                                Reset
+                            </button>
+                        </div>
                     </div>
+                    
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
@@ -177,6 +195,7 @@
 
     <!-- Custom JavaScript -->
     <script src="/js/dashboard-notification.js?v=2" defer></script>
+    <script src="/js/dashboard-filter.js?v=2" defer></script>
     <script src="/js/dashboard.js?v=2" defer></script>
     <script src="/js/dashboard-monitor.js?v=2" defer></script>
     <script src="/js/dynamic-form.js?v=2" defer></script>

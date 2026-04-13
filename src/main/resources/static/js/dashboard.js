@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     bindMonitorConfigForm();
     resetMonitorConfigForm();
+    bindLogFilterEvents();
     fetchDataAndRenderCharts();
 });
 

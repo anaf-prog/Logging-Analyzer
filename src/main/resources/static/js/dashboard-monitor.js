@@ -6,6 +6,11 @@ function initMonitorConfigsFromServer(serverData) {
     if (serverData && Array.isArray(serverData)) {
         monitorConfigs = serverData;
         populateMonitorConfigsTable(monitorConfigs);
+
+        if (typeof updateFilterDropdown === 'function') {
+            updateFilterDropdown(monitorConfigs);
+        }
+        
     } else {
         monitorConfigs = [];
         populateMonitorConfigsTable(monitorConfigs);
