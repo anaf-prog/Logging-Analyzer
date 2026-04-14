@@ -2,16 +2,12 @@
 
 /**
  * Fungsi untuk mengupdate pilihan produk di dropdown filter
- * @param {Array} configs - List konfigurasi dari server
  */
 function updateFilterDropdown(configs) {
     const selectFilter = document.getElementById('filterProductName');
     if (!selectFilter) return;
 
-    // Simpan nilai yang sedang dipilih agar tidak hilang saat update
     const currentSelection = selectFilter.value;
-
-    // Reset dropdown tapi sisakan "Semua Produk"
     selectFilter.innerHTML = '<option value="">Semua Produk</option>';
 
     if (configs && configs.length > 0) {
@@ -23,7 +19,6 @@ function updateFilterDropdown(configs) {
         });
     }
 
-    // Kembalikan nilai yang dipilih sebelumnya jika masih ada
     selectFilter.value = currentSelection;
 }
 
@@ -31,6 +26,8 @@ function updateFilterDropdown(configs) {
  * Logika utama untuk memfilter data tabel Log Error
  */
 function applyLogFilter() {
+    console.log('applyLogFilter dipanggil');
+
     const productSelect = document.getElementById('filterProductName');
     const searchInput = document.getElementById('searchLogMessage');
 
@@ -39,22 +36,65 @@ function applyLogFilter() {
     const selectedProduct = productSelect.value.toLowerCase();
     const searchText = searchInput.value.toLowerCase();
 
-    // latestErrors diambil dari scope global (dashboard.js)
+    // Gunakan data dari variable global latestErrors
     const filteredData = latestErrors.filter(error => {
-        // Cek filter produk
         const matchesProduct = selectedProduct === '' ||
             (error.productName && error.productName.toLowerCase() === selectedProduct);
-
-        // Cek filter teks (message atau identifier)
         const messageMatch = error.message && error.message.toLowerCase().includes(searchText);
         const identifierMatch = error.identifier && error.identifier.toLowerCase().includes(searchText);
         const matchesSearch = searchText === '' || (messageMatch || identifierMatch);
-
         return matchesProduct && matchesSearch;
     });
 
-    // Panggil fungsi render yang ada di dashboard.js
+    console.log('Filtered data length:', filteredData.length);
+
+    // Tampilkan data yang sudah difilter
     populateLatestErrorsTable(filteredData);
+
+    // Render ulang pagination untuk data yang difilter
+    if (typeof renderPagination === 'function') {
+        const pageSize = 10;
+        const totalPagesData = Math.max(1, Math.ceil(filteredData.length / pageSize));
+
+        const fakePageData = {
+            number: 0,
+            totalPages: totalPagesData,
+            first: filteredData.length === 0,
+            last: filteredData.length <= pageSize,
+            size: pageSize,
+            totalElements: filteredData.length
+        };
+
+        renderPagination(fakePageData);
+    }
+
+    // Tandai bahwa filter sedang aktif (akan dipakai oleh auto refresh)
+    if (typeof window.isFilterActive !== 'undefined') {
+        window.isFilterActive = true;
+    }
+}
+
+/**
+ * Reset semua filter
+ */
+function resetLogFilter() {
+    console.log('resetLogFilter dipanggil');
+
+    const productSelect = document.getElementById('filterProductName');
+    const searchInput = document.getElementById('searchLogMessage');
+
+    if (productSelect) productSelect.value = '';
+    if (searchInput) searchInput.value = '';
+
+    // Tandai filter tidak aktif
+    if (typeof window.isFilterActive !== 'undefined') {
+        window.isFilterActive = false;
+    }
+
+    // Kembalikan ke data normal dari API
+    if (typeof loadLatestErrors === 'function') {
+        loadLatestErrors(0, 10);
+    }
 }
 
 /**
@@ -72,14 +112,10 @@ function bindLogFilterEvents() {
 
     if (btnReset) {
         btnReset.addEventListener('click', function () {
-            document.getElementById('filterProductName').value = '';
-            document.getElementById('searchLogMessage').value = '';
-            // Render ulang data asli tanpa filter
-            populateLatestErrorsTable(latestErrors);
+            resetLogFilter();
         });
     }
 
-    // Opsional: Tekan 'Enter' di input search langsung cari
     const searchInput = document.getElementById('searchLogMessage');
     if (searchInput) {
         searchInput.addEventListener('keypress', function (e) {

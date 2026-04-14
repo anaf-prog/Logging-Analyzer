@@ -1,10 +1,15 @@
 // File utama (dashboard.js)
+
 // Data latestErrors dari controller (Thymeleaf inline)
 let latestErrors = [];
+
 let monitorConfigs = [];
 
 // Variabel untuk menyimpan callback delete
 let pendingDeleteId = null;
+
+// Track apakah filter sedang aktif
+let isFilterActive = false;
 
 // Fungsi untuk format waktu
 function formatTime(dateTimeString) {
@@ -53,26 +58,108 @@ function initDataFromServer(serverData) {
     }
 }
 
-// Memuat ulang data error terbaru dari API (GET /dashboard/api/latest-errors)
-async function loadLatestErrors() {
-    const response = await fetch('/dashboard/api/latest-errors');
-    if (!response.ok) {
-        throw new Error('Gagal memuat data log error terbaru');
+// ========== FUNGSI CEK STATUS FILTER ==========
+function checkFilterStatus() {
+    const productSelect = document.getElementById('filterProductName');
+    const searchInput = document.getElementById('searchLogMessage');
+
+    const isProductFilter = productSelect && productSelect.value !== '';
+    const isSearchFilter = searchInput && searchInput.value !== '';
+
+    isFilterActive = isProductFilter || isSearchFilter;
+
+    return isFilterActive;
+}
+
+// ========== FUNGSI AUTO REFRESH YANG AMAN ==========
+async function autoRefreshData() {
+    // Cek apakah filter sedang aktif
+    if (checkFilterStatus()) {
+        console.log('Auto refresh dilewati karena filter aktif');
+        return;  // Jangan lakukan apa-apa kalau filter aktif
     }
 
-    latestErrors = await response.json();
-    populateLatestErrorsTable(latestErrors);
+    console.log('Auto refresh berjalan, memuat halaman:', currentActivePage);
+    await loadLatestErrors(currentActivePage, 10);
+}
+
+function resetFilter() {
+    document.getElementById('filterProductName').value = '';
+    document.getElementById('searchLogMessage').value = '';
+
+    // Reset flag filter
+    isFilterActive = false;
+
+    // Render ulang data asli
+    if (typeof loadLatestErrors === 'function') {
+        loadLatestErrors(currentActivePage || 0, 10);
+    }
+}
+
+// Memuat ulang data error terbaru dari API (GET /dashboard/api/latest-errors)
+async function loadLatestErrors(page = 0, size = 10) {
+    const pageNum = parseInt(page);
+    const validatedPage = isNaN(pageNum) ? 0 : pageNum;
+
+    currentActivePage = validatedPage;
+
+    try {
+        const response = await fetch(`/dashboard/api/latest-errors?page=${validatedPage}&size=${size}`);
+        if (!response.ok) {
+            throw new Error('Gagal memuat data log error terbaru');
+        }
+
+        const data = await response.json();
+        console.log('RESPONSE API:', data);
+
+        const pageInfo = data.page || {};
+
+        const normalizedData = {
+            content: data.content || [],
+            totalPages: pageInfo.totalPages || 0,
+            number: pageInfo.number || 0,
+            first: pageInfo.first || false,
+            last: pageInfo.last || false,
+            size: pageInfo.size || size,
+            totalElements: pageInfo.totalElements || 0
+        };
+
+        console.log('Normalized data:', normalizedData);
+
+        // Simpan data lengkap untuk pagination
+        latestErrorsPageData = normalizedData;
+        // Simpan data content (array) ke latestErrors agar filter tidak pecah
+        latestErrors = normalizedData.content;
+
+        // Render tabel dengan data content
+        populateLatestErrorsTable(latestErrors);
+
+        // Render pagination dengan data yang sudah dinormalisasi
+        renderPagination(normalizedData);
+
+    } catch (error) {
+        console.error('Error loading errors:', error);
+    }
 }
 
 async function fetchDataAndRenderCharts() {
     try {
-        await loadLatestErrors();
+        // Cek jika sedang dalam mode filter
+        const isFilterActiveNow = checkFilterStatus();
+
+        if (isFilterActiveNow) {
+            console.log('Filter aktif, refresh dilewati');
+            return;  // JANGAN refresh kalau filter aktif
+        }
+
+        // Jika tidak filter, load halaman biasa
+        await loadLatestErrors(currentActivePage, 10);
+
     } catch (error) {
-        console.error(error);
+        console.error('Error di fetchDataAndRenderCharts:', error);
     }
 }
 
-// Panggil fungsi saat halaman dimuat
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded, initializing dashboard...');
 
@@ -93,8 +180,11 @@ document.addEventListener('DOMContentLoaded', function () {
     bindMonitorConfigForm();
     resetMonitorConfigForm();
     bindLogFilterEvents();
-    fetchDataAndRenderCharts();
+
+    // Load data awal
+    setTimeout(() => {
+        loadLatestErrors(0, 10);
+    }, 100);
 });
 
-// Refresh data setiap 30 detik
-setInterval(fetchDataAndRenderCharts, 30000);
+setInterval(autoRefreshData, 30000);

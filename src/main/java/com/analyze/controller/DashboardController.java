@@ -3,25 +3,31 @@ package com.analyze.controller;
 import com.analyze.service.DashboardService;
 import com.analyze.service.ProductMonitorConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import com.analyze.entity.LogError;
-import java.util.List;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@Controller
-@RequestMapping("/dashboard")
+import com.analyze.entity.LogError;
+
 /**
  * Controller untuk menangani halaman dan API dashboard.
  *
- * <p>Relasi komponen:</p>
+ * <p>
+ * Relasi komponen:
+ * </p>
  * <ul>
- *   <li>Menggunakan {@link DashboardService} untuk mengambil data error terbaru yang akan ditampilkan di dashboard.</li>
- *   <li>Menggunakan {@link ProductMonitorConfigService} untuk mengambil konfigurasi monitor produk yang ditampilkan di halaman dashboard.</li>
+ * <li>Menggunakan {@link DashboardService} untuk mengambil data error terbaru
+ * yang akan ditampilkan di dashboard.</li>
+ * <li>Menggunakan {@link ProductMonitorConfigService} untuk mengambil
+ * konfigurasi monitor produk yang ditampilkan di halaman dashboard.</li>
  * </ul>
  */
+@Controller
+@RequestMapping("/dashboard")
 public class DashboardController {
 
     @Autowired
@@ -35,9 +41,12 @@ public class DashboardController {
      */
     @GetMapping
     public String dashboard(Model model) {
-        model.addAttribute("latestErrors", dashboardService.getLatestErrors());
+        // Mengambil data awal untuk render pertama kali (opsional jika menggunakan JS
+        // fetch)
+        Page<LogError> errorPage = dashboardService.getLatestErrors(0, 10);
+        model.addAttribute("latestErrors", errorPage.getContent());
         model.addAttribute("monitorConfigs", productMonitorConfigService.getAllConfigs());
-        return "dashboard"; // Ini akan me-resolve ke src/main/resources/templates/dashboard.html
+        return "dashboard";
     }
 
     /**
@@ -45,7 +54,9 @@ public class DashboardController {
      */
     @GetMapping("/api/latest-errors")
     @ResponseBody
-    public List<LogError> latestErrors() {
-        return dashboardService.getLatestErrors();
+    public Page<LogError> latestErrors(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+        return dashboardService.getLatestErrors(page, size);
     }
 }
