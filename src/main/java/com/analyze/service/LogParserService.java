@@ -43,6 +43,8 @@ public class LogParserService {
                 return Optional.empty();
             }
 
+            log.debug("Payload yang akan di-parse: {}", payload);
+
             JsonNode payloadNode = readPayload(payload, config.getResponseFormat());
 
             String codeValue = readConfiguredValue(payloadNode, config.getCodeField(), "code");
@@ -96,10 +98,12 @@ public class LogParserService {
 
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : "";
-            if (msg.contains("Unexpected EOF") || msg.contains("prolog")) {
-                log.warn("PARSE WARNING: Payload terpotong atau tidak valid di baris: {}...", line.substring(0, Math.min(line.length(), 50)));
+            // Jika error karena format JSON nggak standar, jangan log ERROR, cukup DEBUG
+            if (msg.contains("Unexpected character") || msg.contains("Unexpected EOF") || msg.contains("prolog")) {
+                log.debug("Skip baris karena bukan format JSON/XML yang valid: {}", line);
             } else {
-                log.error("PARSE ERROR", e);
+                // Ini error sistem
+                log.error("SYSTEM PARSE ERROR: {}", e.getMessage());
             }
             return Optional.empty();
         }
@@ -167,7 +171,21 @@ public class LogParserService {
         if (prefix != null && !prefix.isBlank() && line.contains(prefix)) {
             searchLine = line.substring(line.indexOf(prefix) + prefix.length());
         }
-        return extractDelimitedBlock(searchLine, '{', '}');
+
+        int start = searchLine.indexOf("{\"");
+        if (start == -1)
+            start = searchLine.indexOf("{ \""); // toleransi spasi
+
+        if (start == -1)
+            return null;
+
+        String possibleJson = searchLine.substring(start);
+        int end = possibleJson.lastIndexOf('}');
+
+        if (end != -1) {
+            return possibleJson.substring(0, end + 1);
+        }
+        return null;
     }
 
     private String extractXmlPayload(String line, String wrapperTag) {
@@ -181,15 +199,6 @@ public class LogParserService {
             if (end > start) {
                 return line.substring(start, end + 1);
             }
-        }
-        return null;
-    }
-
-    private String extractDelimitedBlock(String line, char startToken, char endToken) {
-        int start = line.indexOf(startToken);
-        int end = line.lastIndexOf(endToken);
-        if (start != -1 && end != -1 && end > start) {
-            return line.substring(start, end + 1);
         }
         return null;
     }
