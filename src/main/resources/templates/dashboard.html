@@ -67,13 +67,18 @@
                             </div>
                         
                             <div class="col-md-4">
-                                <label for="codeField" class="form-label">Skip Field Code</label>
-                                <input type="text" class="form-control" id="codeField" name="codeField" placeholder="Contoh: 0000">
+                                <label for="codeField" class="form-label">Nama Field Code</label>
+                                <input type="text" class="form-control" id="codeField" name="codeField" placeholder="Contoh: code, response_code">
                             </div>
                         
                             <div class="col-md-4">
-                                <label for="rcField" class="form-label">Skip Field RC</label>
-                                <input type="text" class="form-control" id="rcField" name="rcField" placeholder="Contoh: 0000">
+                                <label for="rcField" class="form-label">Nama Field RC</label>
+                                <input type="text" class="form-control" id="rcField" name="rcField" placeholder="Contoh: rc, status">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="successCodes" class="form-label">Daftar Kode Sukses</label>
+                                <input type="text" class="form-control" id="successCodes" name="successCodes" placeholder="Contoh: 0000,00">
                             </div>
                         
                             <div class="col-md-4" id="jsonPrefixDiv" style="display: none;">
@@ -107,20 +112,21 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 10%;">Nama Produk</th>
-                                        <th style="width: 25%;">Path Dipantau</th>
+                                        <th style="width: 20%;">Path Dipantau</th>
                                         <th style="width: 8%;">Format</th>
                                         <th style="width: 10%;">JSON Prefix</th>
                                         <th style="width: 10%;">XML Wrapper</th>
-                                        <th style="width: 10%;">Skip Code</th>
-                                        <th style="width: 10%;">Skip RC</th>
-                                        <th style="width: 7%;">Status</th>
+                                        <th style="width: 8%;">Field Code</th>
+                                        <th style="width: 8%;">Field RC</th>
+                                        <th style="width: 10%;">Kode Sukses</th>
+                                        <th style="width: 6%;">Status</th>
                                         <th style="width: 10%;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="monitorConfigsTableBody">
                                     <tr th:if="${#lists.isEmpty(monitorConfigs)}">
-                                        <td colspan="9" class="text-center text-muted">Belum ada konfigurasi monitor</td>
-                                    </tr>
+                                        <td colspan="10" class="text-center text-muted">Belum ada konfigurasi monitor</td>
+                                    </tr>    
                                 </tbody>
                             </table>
                         </div>

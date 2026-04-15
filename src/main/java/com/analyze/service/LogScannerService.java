@@ -1,17 +1,28 @@
 package com.analyze.service;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.analyze.entity.LogError;
 import com.analyze.entity.ProductMonitorConfig;
+import com.analyze.repository.LogErrorRepository;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -27,99 +38,124 @@ public class LogScannerService {
     @Autowired
     private ProductMonitorConfigService productMonitorConfigService;
 
-    private Set<String> processedGzFiles = new HashSet<>();
+    @Autowired
+    private LogParserService logParserService;
 
-    /**
-     * Melakukan scanning seluruh folder pada konfigurasi aktif lalu memproses file log.
-     */
+    @Autowired
+    private LogErrorRepository logErrorRepository;
+
+    private final Map<String, Long> fileOffsets = new ConcurrentHashMap<>();
+    private final Set<String> processedGzFiles = new HashSet<>();
+    private static final int BATCH_SIZE = 500;
+
+    @Scheduled(fixedDelay = 5000)
     public void scanAndProcess() {
-
-        log.info("============= Start Scanning Folder ================");
-        
+        log.debug("============= Start Scanning Folder ================");
         List<ProductMonitorConfig> configs = productMonitorConfigService.getEnabledConfigs();
 
-        log.info("Configured monitor count: " + configs.size());
-
         for (ProductMonitorConfig config : configs) {
-            String pathStr = config.getPath();
-
-            log.info("Scanning folder : {} for product {} ({})",
-                    pathStr,
-                    config.getProductName(),
-                    config.getResponseFormat());
-
-            Path dirPath = Paths.get(pathStr);
-
-            if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
-                log.error("Invalid directory: " + dirPath);
+            Path dirPath = Paths.get(config.getPath());
+            if (!Files.exists(dirPath))
                 continue;
-            }
 
             try (Stream<Path> paths = Files.list(dirPath)) {
-
-                paths
-                    .filter(Files::isRegularFile)
-                    .filter(this::isLogFile)
-                    .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
-                    .forEach(path -> handleFile(path, config));
-
+                paths.filter(Files::isRegularFile)
+                        .filter(this::isLogFile)
+                        .forEach(path -> handleFile(path, config));
             } catch (IOException e) {
-                log.error("Error scanning directory: " + dirPath);
-                e.printStackTrace();
+                log.error("Error scanning: " + dirPath, e);
             }
         }
     }
 
-    /**
-     * Menentukan alur pemrosesan file berdasarkan ekstensi.
-     */
     private void handleFile(Path path, ProductMonitorConfig config) {
         String fileName = path.getFileName().toString();
-
-        log.info("Handling file : " + fileName);
-
         try {
-
             if (fileName.endsWith(".gz")) {
-                processGzip(path, config);
+                processGzip(path, config); // File GZ tetap diproses sekali saja
             } else if (fileName.endsWith(".log")) {
-                processActiveLog(path, config);
+                processActiveLogWithOffset(path, config);
             }
-
         } catch (Exception e) {
-            System.err.println("Failed processing file: " + fileName);
-            e.printStackTrace();
+            log.error("Failed processing file: " + fileName, e);
         }
     }
 
     /**
-     * Memproses file gzip sekali saja per kombinasi produk+path.
+     * Memproses file .log secara efisien menggunakan Byte Offset (Seeking).
+     * Tidak akan pernah membaca ulang data yang sudah diproses sebelumnya.
      */
-    private void processGzip(Path path, ProductMonitorConfig config) throws IOException {
-        String fullPath = config.getId() + ":" + path.toAbsolutePath();
+    private void processActiveLogWithOffset(Path path, ProductMonitorConfig config) throws IOException {
+        String fileKey = config.getId() + ":" + path.toAbsolutePath();
+        File file = path.toFile();
+        long currentFileSize = file.length();
+        long lastPosition = fileOffsets.getOrDefault(fileKey, 0L);
 
-        if (processedGzFiles.contains(fullPath)) {
-            log.info("SKIP (already processed gz): " + fullPath);
-            return;
+        if (currentFileSize < lastPosition) {
+            log.info("LOG ROLLING DETECTED for {}. Resetting offset.", path.getFileName());
+            lastPosition = 0;
         }
 
-        log.info("PROCESS GZ: " + fullPath);
+        if (currentFileSize == lastPosition) return;
+
+        log.info("READING NEW DATA in {} from byte {}", path.getFileName(), lastPosition);
+
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            raf.seek(lastPosition);
+
+            String line;
+            Map<String, LogError> batchBuffer = new LinkedHashMap<>();
+
+            while ((line = raf.readLine()) != null) {
+                String decodedLine = new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+
+                logParserService.parse(decodedLine, config).ifPresent(logError -> {
+
+                    batchBuffer.put(logError.getMessageHash(), logError);
+
+                    if (batchBuffer.size() >= BATCH_SIZE) {
+                        saveBatchSafely(batchBuffer.values());
+                        batchBuffer.clear();
+                    }
+                });
+            }
+
+            // Simpan sisa data
+            if (!batchBuffer.isEmpty()) {
+                saveBatchSafely(batchBuffer.values());
+            }
+
+            fileOffsets.put(fileKey, raf.getFilePointer());
+        }
+    }
+
+    private void saveBatchSafely(Collection<LogError> errors) {
+        try {
+            for (LogError error : errors) {
+                logErrorRepository.insertIgnore(
+                        error.getProductName(),
+                        error.getLevel(),
+                        error.getLogTime(),
+                        error.getMessage(),
+                        error.getIdentifier(),
+                        error.getMessageHash(),
+                        error.getCreatedAt() != null ? error.getCreatedAt() : java.time.LocalDateTime.now());
+            }
+            log.info("Sukses simpan data error ");
+        } catch (Exception e) {
+            log.error("Gagal simpan batch karena error lain: {}", e.getMessage());
+        }
+    }
+
+    private void processGzip(Path path, ProductMonitorConfig config) throws IOException {
+        String fullPath = config.getId() + ":" + path.toAbsolutePath();
+        if (processedGzFiles.contains(fullPath))
+            return;
 
         logProcessorService.processFile(path.toFile(), config);
         processedGzFiles.add(fullPath);
     }
 
-    /**
-     * Memproses file log aktif (.log).
-     */
-    private void processActiveLog(Path path, ProductMonitorConfig config) throws IOException {
-        log.info("PROCESS LOG: " + path);
-        logProcessorService.processFile(path.toFile(), config);
-    }
-
-    /**
-     * Validasi apakah file termasuk tipe log yang didukung.
-     */
     private boolean isLogFile(Path path) {
         String name = path.getFileName().toString().toLowerCase();
         return name.endsWith(".log") || name.endsWith(".gz");

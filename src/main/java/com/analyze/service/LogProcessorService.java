@@ -2,10 +2,10 @@ package com.analyze.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.analyze.entity.LogError;
@@ -33,44 +33,52 @@ public class LogProcessorService {
 
     @Autowired
     private LogReaderService logReaderService;
-
     @Autowired
     private LogParserService logParserService;
-
     @Autowired
     private LogErrorRepository logErrorRepository;
 
-    /**
-     * Memproses satu file log berdasarkan konfigurasi produk.
-     */
+    // Simpan tiap 500 baris error
+    private static final int BATCH_SIZE = 500;
+
     public void processFile(File file, ProductMonitorConfig config) throws IOException {
-        log.info("=== PROCESS FILE === " + file.getName());
+        log.info("=== STREAMING PROCESS === " + file.getName());
 
-        List<String> lines = logReaderService.readFile(file);
-        List<LogError> result = new ArrayList<>();
-        Set<String> uniqueInThisFile = new HashSet<>();
+        Map<String, LogError> batchBuffer = new LinkedHashMap<>();
 
-        for (String line : lines) {
+        logReaderService.readFileStreaming(file, line -> {
             logParserService.parse(line, config).ifPresent(logError -> {
+                batchBuffer.put(logError.getMessageHash(), logError);
 
-                // Cek apakah pesan ini sudah ada di database untuk produk yang sama
-                boolean alreadyInDb = logErrorRepository.existsByProductNameAndMessage(
-                        logError.getProductName(),
-                        logError.getMessage());
-
-                if (!alreadyInDb) {
-                    // Cek apakah pesan ini duplikat di dalam file yang sama
-                    if (uniqueInThisFile.add(logError.getMessage())) {
-                        result.add(logError);
-                    }
+                // Jika buffer penuh, simpan ke DB dan kosongkan buffer
+                if (batchBuffer.size() >= BATCH_SIZE) {
+                    saveBatch(batchBuffer.values());
+                    batchBuffer.clear();
                 }
             });
+        });
+
+        // Simpan sisa data yang ada di buffer
+        if (!batchBuffer.isEmpty()) {
+            saveBatch(batchBuffer.values());
         }
+    }
 
-        log.info("TOTAL NEW MATCH: " + result.size());
-
-        if (!result.isEmpty()) {
-            logErrorRepository.saveAll(result);
+    private void saveBatch(Collection<LogError> errors) {
+        try {
+            for (LogError error : errors) {
+                logErrorRepository.insertIgnore(
+                        error.getProductName(),
+                        error.getLevel(),
+                        error.getLogTime(),
+                        error.getMessage(),
+                        error.getIdentifier(),
+                        error.getMessageHash(),
+                        error.getCreatedAt() != null ? error.getCreatedAt() : java.time.LocalDateTime.now());
+            }
+            log.info("Sukses simpan data error");
+        } catch (Exception e) {
+            log.error("Gagal simpan batch: " + e.getMessage());
         }
     }
     

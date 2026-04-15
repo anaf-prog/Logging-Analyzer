@@ -6,10 +6,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Files;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
-import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,40 +26,40 @@ public class LogReaderService {
     /**
      * Membaca file log dan memilih metode baca sesuai tipe file.
      */
-    public List<String> readFile(File file) throws IOException {
-        if(file.getName().endsWith(".gz")) {
-            return readGzip(file);
+    public void readFileStreaming(File file, Consumer<String> lineProcessor) throws IOException {
+        if (file.getName().endsWith(".gz")) {
+            readGzipStreaming(file, lineProcessor);
         } else {
-            return readPlain(file);
+            readPlainStreaming(file, lineProcessor);
         }
     }
 
     /**
      * Membaca file log teks biasa (non-gzip).
      */
-    private List<String> readPlain(File file) throws IOException {
-        return FileUtils.readLines(file, StandardCharsets.UTF_8);
+    private void readPlainStreaming(File file, Consumer<String> lineProcessor) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lineProcessor.accept(line);
+            }
+        }
     }
 
     /**
      * Membaca file log terkompresi gzip.
      */
-    private List<String> readGzip(File file) {
-        List<String> lines = new ArrayList<>();
-
+    private void readGzipStreaming(File file, Consumer<String> lineProcessor) {
         try (GZIPInputStream gis = new GZIPInputStream(new FileInputStream(file));
-            InputStreamReader isr = new InputStreamReader(gis, StandardCharsets.UTF_8);
-            BufferedReader br = new BufferedReader(isr)) {
-            
+                InputStreamReader isr = new InputStreamReader(gis, StandardCharsets.UTF_8);
+                BufferedReader br = new BufferedReader(isr)) {
             String line;
             while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }    
+                lineProcessor.accept(line);
+            }
         } catch (Exception e) {
-            log.error("Gagal baca gzip : " + e.getMessage());
+            log.error("Gagal baca gzip: " + e.getMessage());
         }
-
-        return lines;
     }
     
 }

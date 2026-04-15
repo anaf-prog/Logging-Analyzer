@@ -1,5 +1,6 @@
 package com.analyze.service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.extern.slf4j.Slf4j;
+import java.security.MessageDigest;
 
 /**
  * Service untuk parsing baris log menjadi objek error.
@@ -52,7 +54,7 @@ public class LogParserService {
                 return Optional.empty();
             }
 
-            if (isSuccess(codeValue, rcValue, status)) {
+            if (isSuccess(config, codeValue, rcValue, status)) {
                 return Optional.empty();
             }
 
@@ -61,6 +63,7 @@ public class LogParserService {
             logError.setMessage(payload);
             logError.setLogTime(extractTimestamp(line));
             logError.setProductName(config.getProductName());
+            logError.setMessageHash(generateHash(payload + config.getProductName()));
 
             String stanValue = findTextIgnoreCase(payloadNode, "stan");
             if (!stanValue.isBlank()) {
@@ -99,6 +102,22 @@ public class LogParserService {
                 log.error("PARSE ERROR", e);
             }
             return Optional.empty();
+        }
+    }
+
+    private String generateHash(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+
+        } catch (Exception e) {
+            return String.valueOf(input.hashCode());
         }
     }
 
@@ -213,17 +232,30 @@ public class LogParserService {
     /**
      * Tentukan hasil sukses/gagal dari code/rc/status.
      */
-    private boolean isSuccess(String codeValue, String rcValue, String statusValue) {
-        boolean hasCode = !codeValue.isBlank();
-        boolean hasRc = !rcValue.isBlank();
+    private boolean isSuccess(ProductMonitorConfig config, String codeValue, String rcValue, String statusValue) {
+        String code = codeValue != null ? codeValue.trim() : "";
+        String rc = rcValue != null ? rcValue.trim() : "";
+        String status = statusValue != null ? statusValue.trim() : "";
+
+        String successCodesStr = config.getSuccessCodes() != null ? config.getSuccessCodes() : "0000,00";
+        String[] successCodes = successCodesStr.split(",");
+        java.util.Set<String> successSet = new java.util.HashSet<>();
+        for (String s : successCodes) {
+            successSet.add(s.trim());
+        }
+
+        boolean hasCode = !code.isEmpty();
+        boolean hasRc = !rc.isEmpty();
 
         if (hasCode || hasRc) {
-            boolean codeOk = !hasCode || "0000".equals(codeValue);
-            boolean rcOk = !hasRc || "0000".equals(rcValue);
+            // Cek apakah code atau rc mengandung nilai sukses (00 atau 0000)
+            boolean codeOk = !hasCode || successSet.contains(code);
+            boolean rcOk = !hasRc || successSet.contains(rc);
             return codeOk && rcOk;
         }
 
-        return "0000".equals(statusValue);
+        // Fallback ke status field jika code/rc tidak ada
+        return successSet.contains(status);
     }
 
     /**

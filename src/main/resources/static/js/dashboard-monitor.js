@@ -32,7 +32,7 @@ function populateMonitorConfigsTable(configs) {
     if (!configs || configs.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell();
-        cell.colSpan = 9; // Sesuaikan menjadi 9 sesuai jumlah th
+        cell.colSpan = 10; // Sesuaikan menjadi 9 sesuai jumlah th
         cell.textContent = 'Belum ada konfigurasi monitor';
         cell.className = 'text-center text-muted';
         return;
@@ -41,35 +41,28 @@ function populateMonitorConfigsTable(configs) {
     configs.forEach(config => {
         const row = tableBody.insertRow();
 
-        // 1. Nama Produk
         row.insertCell().textContent = config.productName || '-';
 
-        // 2. Path (Gunakan title untuk hover agar path lengkap tetap bisa dibaca)
         const pathCell = row.insertCell();
         pathCell.textContent = config.path || '-';
         pathCell.title = config.path || '';
 
-        // 3. Format
         row.insertCell().textContent = config.responseFormat || '-';
 
-        // 4. JSON Prefix
         row.insertCell().textContent = config.jsonPrefix || '-';
 
-        // 5. XML Wrapper
         row.insertCell().textContent = config.xmlWrapperTag || '-';
 
-        // 6. Skip Code
         row.insertCell().textContent = config.codeField || '-';
 
-        // 7. Skip RC
         row.insertCell().textContent = config.rcField || '-';
 
-        // 8. Status (Gunakan class status-aktif yang kita buat di CSS)
+        row.insertCell().textContent = config.successCodes || '-';
+
         const statusCell = row.insertCell();
         statusCell.textContent = config.enabled ? 'Aktif' : 'Nonaktif';
         if (config.enabled) statusCell.className = 'status-aktif';
 
-        // 9. Aksi
         const actionCell = row.insertCell();
         actionCell.className = 'text-nowrap';
 
@@ -203,6 +196,7 @@ function resetMonitorConfigForm() {
     form.configId.value = '';
     form.codeField.value = '';
     form.rcField.value = '';
+    form.successCodes.value = '';
     form.jsonPrefix.value = '';
     form.xmlWrapperTag.value = '';
 
@@ -233,6 +227,7 @@ function startEditMonitorConfig(config) {
     form.responseFormat.value = config.responseFormat || 'JSON';
     form.codeField.value = config.codeField || '';
     form.rcField.value = config.rcField || '';
+    form.successCodes.value = config.successCodes || '';
     form.jsonPrefix.value = config.jsonPrefix || '';
     form.xmlWrapperTag.value = config.xmlWrapperTag || '';
 
@@ -275,6 +270,7 @@ function bindMonitorConfigForm() {
                 responseFormat: form.responseFormat.value,
                 codeField: form.codeField.value.trim(),
                 rcField: form.rcField.value.trim(),
+                successCodes: form.successCodes.value.trim(),
                 jsonPrefix: form.jsonPrefix.value.trim(),
                 xmlWrapperTag: form.xmlWrapperTag.value.trim()
             };

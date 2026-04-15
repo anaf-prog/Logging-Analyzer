@@ -56,6 +56,7 @@ public class ProductMonitorConfigController {
                 request.responseFormat(),
                 request.codeField(),
                 request.rcField(),
+                request.successCodes(),
                 request.jsonPrefix(),
                 request.xmlWrapperTag());
     }
@@ -72,6 +73,7 @@ public class ProductMonitorConfigController {
                 request.responseFormat(),
                 request.codeField(),
                 request.rcField(),
+                request.successCodes(),
                 request.jsonPrefix(),
                 request.xmlWrapperTag());
     }
@@ -94,6 +96,7 @@ public class ProductMonitorConfigController {
             @NotNull ResponseFormat responseFormat,
             String codeField,
             String rcField,
+            String successCodes,
             String jsonPrefix,     
             String xmlWrapperTag) {
     }

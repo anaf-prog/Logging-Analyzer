@@ -187,4 +187,4 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 100);
 });
 
-setInterval(autoRefreshData, 30000);
+setInterval(autoRefreshData, 5000);

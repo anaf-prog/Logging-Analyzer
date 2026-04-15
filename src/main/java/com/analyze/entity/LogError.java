@@ -17,7 +17,8 @@ import lombok.Data;
     indexes = {
         @Index(name = "idx_product_name", columnList = "product_name"),
         @Index(name = "idx_identifier", columnList = "identifier"),
-        @Index(name = "idx_log_time", columnList = "log_time")
+        @Index(name = "idx_log_time", columnList = "log_time"),
+        @Index(name = "idx_msg_hash", columnList = "message_hash", unique = true)
     })
 @Data
 public class LogError {
@@ -38,6 +39,9 @@ public class LogError {
     private String message;
 
     private String identifier;
+
+    @Column(name = "message_hash")
+    private String messageHash;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
