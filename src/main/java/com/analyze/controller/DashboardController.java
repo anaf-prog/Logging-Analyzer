@@ -41,9 +41,7 @@ public class DashboardController {
      */
     @GetMapping
     public String dashboard(Model model) {
-        // Mengambil data awal untuk render pertama kali (opsional jika menggunakan JS
-        // fetch)
-        Page<LogError> errorPage = dashboardService.getLatestErrors(0, 10);
+        Page<LogError> errorPage = dashboardService.getLatestErrors(0, 10, null, null);
         model.addAttribute("latestErrors", errorPage.getContent());
         model.addAttribute("monitorConfigs", productMonitorConfigService.getAllConfigs());
         return "dashboard";
@@ -56,7 +54,10 @@ public class DashboardController {
     @ResponseBody
     public Page<LogError> latestErrors(
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size) {
-        return dashboardService.getLatestErrors(page, size);
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "productName", required = false) String productName,
+            @RequestParam(name = "search", required = false) String search) {
+        // Teruskan parameter filter ke service
+        return dashboardService.getLatestErrors(page, size, productName, search);
     }
 }

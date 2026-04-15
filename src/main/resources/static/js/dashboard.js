@@ -103,8 +103,12 @@ async function loadLatestErrors(page = 0, size = 10) {
 
     currentActivePage = validatedPage;
 
+    const productName = document.getElementById('filterProductName')?.value || '';
+    const search = document.getElementById('searchLogMessage')?.value || '';
+
     try {
-        const response = await fetch(`/dashboard/api/latest-errors?page=${validatedPage}&size=${size}`);
+        const url = `/dashboard/api/latest-errors?page=${validatedPage}&size=${size}&productName=${encodeURIComponent(productName)}&search=${encodeURIComponent(search)}`;
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Gagal memuat data log error terbaru');
         }

@@ -26,49 +26,15 @@ function updateFilterDropdown(configs) {
  * Logika utama untuk memfilter data tabel Log Error
  */
 function applyLogFilter() {
-    console.log('applyLogFilter dipanggil');
+    console.log('applyLogFilter dipanggil - memicu reload server-side');
 
-    const productSelect = document.getElementById('filterProductName');
-    const searchInput = document.getElementById('searchLogMessage');
-
-    if (!productSelect || !searchInput) return;
-
-    const selectedProduct = productSelect.value.toLowerCase();
-    const searchText = searchInput.value.toLowerCase();
-
-    // Gunakan data dari variable global latestErrors
-    const filteredData = latestErrors.filter(error => {
-        const matchesProduct = selectedProduct === '' ||
-            (error.productName && error.productName.toLowerCase() === selectedProduct);
-        const messageMatch = error.message && error.message.toLowerCase().includes(searchText);
-        const identifierMatch = error.identifier && error.identifier.toLowerCase().includes(searchText);
-        const matchesSearch = searchText === '' || (messageMatch || identifierMatch);
-        return matchesProduct && matchesSearch;
-    });
-
-    console.log('Filtered data length:', filteredData.length);
-
-    // Tampilkan data yang sudah difilter
-    populateLatestErrorsTable(filteredData);
-
-    // Render ulang pagination untuk data yang difilter
-    if (typeof renderPagination === 'function') {
-        const pageSize = 10;
-        const totalPagesData = Math.max(1, Math.ceil(filteredData.length / pageSize));
-
-        const fakePageData = {
-            number: 0,
-            totalPages: totalPagesData,
-            first: filteredData.length === 0,
-            last: filteredData.length <= pageSize,
-            size: pageSize,
-            totalElements: filteredData.length
-        };
-
-        renderPagination(fakePageData);
+    // Langsung panggil loadLatestErrors(0, 10)
+    // Fungsi ini di dashboard.js akan mengambil nilai filter sendiri dari dropdown/input
+    if (typeof loadLatestErrors === 'function') {
+        loadLatestErrors(0, 10);
     }
 
-    // Tandai bahwa filter sedang aktif (akan dipakai oleh auto refresh)
+    // Tandai bahwa filter sedang aktif (untuk auto refresh)
     if (typeof window.isFilterActive !== 'undefined') {
         window.isFilterActive = true;
     }
