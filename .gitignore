@@ -47,5 +47,9 @@ out/
 logger-test/
 test/
 
+### Log application ###
+logs/
+
 ### Files ###
 *.txt
+!banner.txt
