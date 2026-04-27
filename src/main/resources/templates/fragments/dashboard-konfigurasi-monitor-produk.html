@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Konfigurasi Monitor Produk
+            </div>
+            <div class="card-body">
+                <form id="monitorConfigForm" class="row g-3">
+                    <input type="hidden" id="configId" name="configId">
+
+                    <div class="col-md-4">
+                        <label for="productName" class="form-label">Nama Produk</label>
+                        <input type="text" class="form-control" id="productName" name="productName"
+                            placeholder="Contoh: PLN" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="path" class="form-label">Alamat Path yang Dipantau</label>
+                        <input type="text" class="form-control" id="path" name="path" placeholder="Contoh: C:\app\log"
+                            required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="responseFormat" class="form-label">Format Response</label>
+                        <select class="form-select" id="responseFormat" name="responseFormat" required>
+                            <option value="JSON">JSON</option>
+                            <option value="XML">XML</option>
+                            <option value="AUTO">Auto Detect</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="codeField" class="form-label">Nama Field Code</label>
+                        <input type="text" class="form-control" id="codeField" name="codeField"
+                            placeholder="Contoh: code, response_code">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="rcField" class="form-label">Nama Field RC</label>
+                        <input type="text" class="form-control" id="rcField" name="rcField"
+                            placeholder="Contoh: rc, status">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="successCodes" class="form-label">Daftar Kode Sukses</label>
+                        <input type="text" class="form-control" id="successCodes" name="successCodes"
+                            placeholder="Contoh: 0000,00">
+                    </div>
+
+                    <div class="col-md-4" id="jsonPrefixDiv" style="display: none;">
+                        <label for="jsonPrefix" class="form-label">JSON Prefix </label>
+                        <input type="text" class="form-control" id="jsonPrefix" name="jsonPrefix"
+                            placeholder="Contoh: data=, RESPONSE INQUIRY">
+                    </div>
+
+                    <div class="col-md-4" id="xmlWrapperDiv" style="display: none;">
+                        <label for="xmlWrapperTag" class="form-label">XML Wrapper Tag</label>
+                        <input type="text" class="form-control" id="xmlWrapperTag" name="xmlWrapperTag"
+                            placeholder="Contoh: log, response">
+                    </div>
+
+                    <div class="col-12 mt-4 d-flex gap-2 align-items-center flex-wrap">
+                        <button type="submit" id="saveConfigButton" class="btn btn-primary">Simpan Konfigurasi</button>
+                        <button type="button" id="cancelEditButton" class="btn btn-outline-secondary d-none">Batal
+                            Edit</button>
+                        <span id="configFormMessage" class="small text-muted"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+</body>
+
+</html>

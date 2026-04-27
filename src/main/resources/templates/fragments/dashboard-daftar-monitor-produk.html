@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Daftar Monitor Produk
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle custom-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">Nama Produk</th>
+                                <th style="width: 20%;">Path Dipantau</th>
+                                <th style="width: 8%;">Format</th>
+                                <th style="width: 10%;">JSON Prefix</th>
+                                <th style="width: 10%;">XML Wrapper</th>
+                                <th style="width: 8%;">Field Code</th>
+                                <th style="width: 8%;">Field RC</th>
+                                <th style="width: 10%;">Kode Sukses</th>
+                                <th style="width: 6%;">Status</th>
+                                <th style="width: 10%;">Aksi</th>
+                        </thead>
+                        <tbody id="monitorConfigsTableBody">
+                            <tr th:if="${#lists.isEmpty(monitorConfigs)}">
+                                <td colspan="10" class="text-center text-muted">Belum ada konfigurasi monitor</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
