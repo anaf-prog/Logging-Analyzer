@@ -7,7 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import com.analyze.entity.LogError;
-import com.analyze.entity.ProductMonitorConfig;
+import com.analyze.entity.MonitorConfig;
 import com.analyze.entity.ResponseFormat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +19,7 @@ import java.security.MessageDigest;
  * Service untuk parsing baris log menjadi objek error.
  *
  * <p>
- * Relasi: memakai {@link ProductMonitorConfig} sebagai aturan parsing,
+ * Relasi: memakai {@link MonitorConfig} sebagai aturan parsing,
  * menggunakan parser JSON/XML, lalu menghasilkan {@link LogError} untuk proses
  * lanjutan.
  * </p>
@@ -34,7 +34,7 @@ public class LogParserService {
     /**
      * Parse satu baris log sesuai konfigurasi produk.
      */
-    public Optional<LogError> parse(String line, ProductMonitorConfig config) {
+    public Optional<LogError> parse(String line, MonitorConfig config) {
 
         try {
             String payload = extractPayload(line, config);
@@ -151,7 +151,7 @@ public class LogParserService {
     /**
      * Ekstrak payload utama (XML/JSON) dari baris log.
      */
-    private String extractPayload(String line, ProductMonitorConfig config) {
+    private String extractPayload(String line, MonitorConfig config) {
         ResponseFormat format = config.getResponseFormat();
 
         if (format == ResponseFormat.XML) {
@@ -241,7 +241,7 @@ public class LogParserService {
     /**
      * Tentukan hasil sukses/gagal dari code/rc/status.
      */
-    private boolean isSuccess(ProductMonitorConfig config, String codeValue, String rcValue, String statusValue) {
+    private boolean isSuccess(MonitorConfig config, String codeValue, String rcValue, String statusValue) {
         String code = codeValue != null ? codeValue.trim() : "";
         String rc = rcValue != null ? rcValue.trim() : "";
         String status = statusValue != null ? statusValue.trim() : "";
@@ -270,7 +270,7 @@ public class LogParserService {
     /**
      * Cek apakah field keputusan tersedia sebelum evaluasi status.
      */
-    private boolean hasDecisionField(ProductMonitorConfig config, String codeValue, String rcValue, String statusValue) {
+    private boolean hasDecisionField(MonitorConfig config, String codeValue, String rcValue, String statusValue) {
         boolean codeConfigured = config.getCodeField() != null && !config.getCodeField().isBlank();
         boolean rcConfigured = config.getRcField() != null && !config.getRcField().isBlank();
 

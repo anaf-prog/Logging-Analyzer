@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konfigurasi Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">Log Error Monitor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ssh-configs">Konfigurasi SSH</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/monitor-configs">Konfigurasi Monitor</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <h1 class="h3 mb-3">Konfigurasi Monitor</h1>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Form Konfigurasi Monitor</h5>
+                <small class="text-muted">Konfigurasi monitoring log untuk produk tertentu</small>
+            </div>
+            <div class="card-body">
+                <form id="monitorConfigForm" class="row g-3">
+                    <input type="hidden" id="monitorConfigId" name="monitorConfigId">
+
+                    <!-- Product Configuration -->
+                    <div class="col-12">
+                        <h6 class="text-primary">Konfigurasi Produk</h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="productName" class="form-label">Nama Produk *</label>
+                        <input type="text" class="form-control" id="productName" name="productName" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="logPath" class="form-label">Path Log *</label>
+                        <input type="text" class="form-control" id="logPath" name="logPath" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="responseFormat" class="form-label">Format Response *</label>
+                        <select class="form-select" id="responseFormat" name="responseFormat" required>
+                            <option value="">Pilih Format</option>
+                            <option value="JSON">JSON</option>
+                            <option value="XML">XML</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="codeField" class="form-label">Code Field</label>
+                        <input type="text" class="form-control" id="codeField" name="codeField">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="rcField" class="form-label">RC Field</label>
+                        <input type="text" class="form-control" id="rcField" name="rcField">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="successCodes" class="form-label">Success Codes</label>
+                        <input type="text" class="form-control" id="successCodes" name="successCodes" value="0000,00">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="jsonPrefix" class="form-label">JSON Prefix</label>
+                        <input type="text" class="form-control" id="jsonPrefix" name="jsonPrefix">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="xmlWrapperTag" class="form-label">XML Wrapper Tag</label>
+                        <input type="text" class="form-control" id="xmlWrapperTag" name="xmlWrapperTag">
+                    </div>
+
+                    <!-- Response Template Configuration -->
+                    <div class="col-12 mt-3">
+                        <h6 class="text-primary">Konfigurasi Response Template</h6>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="responseName" class="form-label">Nama Response *</label>
+                        <input type="text" class="form-control" id="responseName" name="responseName" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="sshConfigId" class="form-label">SSH Config</label>
+                        <select class="form-select" id="sshConfigId" name="sshConfigId">
+                            <option value="">Pilih SSH Config</option>
+                            <option th:each="ssh : ${sshConfigs}" th:value="${ssh.id}" th:text="${ssh.name}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="responseDescription" class="form-label">Deskripsi Response</label>
+                        <textarea class="form-control" id="responseDescription" name="responseDescription" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="responseTemplate" class="form-label">Template Response *</label>
+                        <textarea id="responseTemplate" class="form-control" name="responseTemplate" rows="8" required></textarea>
+                    </div>
+
+                    <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enabled" name="enabled" checked>
+                            <label class="form-check-label" for="enabled">Enabled</label>
+                        </div>
+                        <button type="button" id="testResponseButton" class="btn btn-outline-info">Test Template</button>
+                        <button type="submit" id="saveMonitorConfigButton" class="btn btn-primary">Simpan Config</button>
+                        <button type="button" id="cancelEditButton" class="btn btn-outline-secondary d-none">Batal Edit</button>
+                        <button type="button" id="exampleJsonButton" class="btn btn-outline-success">Contoh JSON</button>
+                        <button type="button" id="exampleXmlButton" class="btn btn-outline-warning">Contoh XML</button>
+                        <span id="monitorConfigMessage" class="small text-muted"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Daftar Konfigurasi Monitor -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Daftar Konfigurasi Monitor</h5>
+                <small class="text-muted">Semua konfigurasi monitoring yang tersimpan</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Produk</th>
+                                <th>Response Name</th>
+                                <th>Format</th>
+                                <th>Format Response</th>
+                                <th>SSH Config</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monitorConfigsTableBody">
+                            <tr th:if="${#lists.isEmpty(monitorConfigs)}">
+                                <td colspan="8" class="text-center text-muted">Belum ada konfigurasi monitor</td>
+                            </tr>
+                            <tr th:each="config : ${monitorConfigs}">
+                                <td th:text="${config.productName}"></td>
+                                <td th:text="${config.responseName}"></td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${config.responseFormat == 'JSON' ? 'bg-success' : 'bg-info'}"
+                                          th:text="${config.responseFormat}"></span>
+                                </td>
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary response-preview-btn"
+                                            th:data-product-name="${config.productName}"
+                                            th:data-response-template="${config.responseTemplate}">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <span th:if="${config.sshConfig != null}" 
+                                          th:text="${config.sshConfig.name}" 
+                                          class="badge bg-secondary"></span>
+                                    <span th:if="${config.sshConfig == null}" class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <span th:if="${config.enabled}" class="badge bg-success">Active</span>
+                                    <span th:unless="${config.enabled}" class="badge bg-danger">Inactive</span>
+                                </td>
+                                <td th:text="${#temporals.format(config.createdAt, 'dd-MM-yyyy HH:mm')}"></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary edit-btn"
+                                                th:data-id="${config.id}"
+                                                th:data-product-name="${config.productName}"
+                                                th:data-log-path="${config.logPath}"
+                                                th:data-response-format="${config.responseFormat}"
+                                                th:data-code-field="${config.codeField}"
+                                                th:data-rc-field="${config.rcField}"
+                                                th:data-success-codes="${config.successCodes}"
+                                                th:data-json-prefix="${config.jsonPrefix}"
+                                                th:data-xml-wrapper-tag="${config.xmlWrapperTag}"
+                                                th:data-response-name="${config.responseName}"
+                                                th:data-response-description="${config.responseDescription}"
+                                                th:data-response-template="${config.responseTemplate}"
+                                                th:data-ssh-config-id="${config.sshConfig != null ? config.sshConfig.id : ''}"
+                                                th:data-enabled="${config.enabled}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger delete-btn"
+                                                th:data-id="${config.id}"
+                                                th:data-name="${config.productName}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Preview Modal -->
+    <div th:replace="~{fragments/monitor-config/nonitor-modal-format-response :: responsePreviewModal}"></div>
+
+    <!-- Delete Modal -->
+    <div th:replace="~{fragments/monitor-config/monitor-modal-delete :: deleteModal}"></div>
+
+    <!-- Test Response Modal -->
+    <div th:replace="~{fragments/monitor-config/monitor-modal-response :: testResponseModal}"></div>
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        window.serverMonitorConfigs = /*[[${monitorConfigs}]]*/[];
+        window.serverSshConfigs = /*[[${sshConfigs}]]*/[];
+        /*]]>*/
+    </script>
+    <script src="/js/monitor/monitor-core.js?v=1" defer></script>
+    <script src="/js/monitor/monitor-api.js?v=1" defer></script>
+    <script src="/js/monitor/monitor-ui.js?v=1" defer></script>
+    <script src="/js/monitor/monitor-main.js?v=1" defer></script>
+</body>
+
+</html>

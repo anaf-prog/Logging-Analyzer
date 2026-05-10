@@ -20,7 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.analyze.entity.LogError;
-import com.analyze.entity.ProductMonitorConfig;
+import com.analyze.entity.MonitorConfig;
 import com.analyze.repository.LogErrorRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class LogScannerService {
     private LogProcessorService logProcessorService;
 
     @Autowired
-    private ProductMonitorConfigService productMonitorConfigService;
+    private MonitorConfigService monitorConfigService;
 
     @Autowired
     private LogParserService logParserService;
@@ -50,10 +50,10 @@ public class LogScannerService {
 
     @Scheduled(fixedDelay = 5000)
     public void scanAndProcess() {
-        List<ProductMonitorConfig> configs = productMonitorConfigService.getEnabledConfigs();
+        List<MonitorConfig> configs = monitorConfigService.getEnabledConfigs();
 
-        for (ProductMonitorConfig config : configs) {
-            Path dirPath = Paths.get(config.getPath());
+        for (MonitorConfig config : configs) {
+            Path dirPath = Paths.get(config.getLogPath());
             if (!Files.exists(dirPath))
                 continue;
 
@@ -67,7 +67,7 @@ public class LogScannerService {
         }
     }
 
-    private void handleFile(Path path, ProductMonitorConfig config) {
+    private void handleFile(Path path, MonitorConfig config) {
         String fileName = path.getFileName().toString();
         try {
             if (fileName.endsWith(".gz")) {
@@ -84,7 +84,7 @@ public class LogScannerService {
      * Memproses file .log secara efisien menggunakan Byte Offset (Seeking).
      * Tidak akan pernah membaca ulang data yang sudah diproses sebelumnya.
      */
-    private void processActiveLogWithOffset(Path path, ProductMonitorConfig config) throws IOException {
+    private void processActiveLogWithOffset(Path path, MonitorConfig config) throws IOException {
         String fileKey = config.getId() + ":" + path.toAbsolutePath();
         File file = path.toFile();
         long currentFileSize = file.length();
@@ -146,7 +146,7 @@ public class LogScannerService {
         }
     }
 
-    private void processGzip(Path path, ProductMonitorConfig config) throws IOException {
+    private void processGzip(Path path, MonitorConfig config) throws IOException {
         String fullPath = config.getId() + ":" + path.toAbsolutePath();
         if (processedGzFiles.contains(fullPath))
             return;

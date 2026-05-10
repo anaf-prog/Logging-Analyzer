@@ -9,7 +9,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.analyze.entity.LogError;
-import com.analyze.entity.ProductMonitorConfig;
+import com.analyze.entity.MonitorConfig;
 import com.analyze.repository.LogErrorRepository;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,7 +41,7 @@ public class LogProcessorService {
     // Simpan tiap 500 baris error
     private static final int BATCH_SIZE = 500;
 
-    public void processFile(File file, ProductMonitorConfig config) throws IOException {
+    public void processFile(File file, MonitorConfig config) throws IOException {
         log.info("=== STREAMING PROCESS === " + file.getName());
 
         Map<String, LogError> batchBuffer = new LinkedHashMap<>();

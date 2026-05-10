@@ -13,6 +13,7 @@ import com.analyze.repository.SSHConfigRepository;
 
 @Service
 public class SSHConfigService {
+    private static final String DEFAULT_LOG_PATH = "/var/log/app.log";
 
     @Autowired
     private SSHConfigRepository repository;
@@ -23,6 +24,10 @@ public class SSHConfigService {
 
     public Optional<SSHConfig> getFirstEnabledConfig() {
         return repository.findFirstByEnabledTrueOrderByIdAsc();
+    }
+
+    public Optional<SSHConfig> getConfigById(Long id) {
+        return repository.findById(id);
     }
 
     @Transactional
@@ -55,7 +60,13 @@ public class SSHConfigService {
         config.setUsername(requireValue(username, "Username"));
         config.setPassword(requireValue(password, "Password"));
         config.setSudoPassword(normalize(sudoPassword));
-        config.setLogPath(requireValue(logPath, "Path log"));
+        String normalizedLogPath = normalize(logPath);
+        if (normalizedLogPath != null) {
+            config.setLogPath(normalizedLogPath);
+        } else if (config.getLogPath() == null || config.getLogPath().isBlank()) {
+            // Keep column populated for backward DB compatibility.
+            config.setLogPath(DEFAULT_LOG_PATH);
+        }
         config.setEnabled(enabled);
     }
 

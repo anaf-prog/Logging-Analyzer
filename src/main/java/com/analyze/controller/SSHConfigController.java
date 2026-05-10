@@ -91,7 +91,7 @@ public class SSHConfigController {
             @NotBlank String username,
             @NotBlank String password,
             String sudoPassword,
-            @NotBlank String logPath,
+            String logPath,
             boolean enabled) {
     }
 

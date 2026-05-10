@@ -8,15 +8,17 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "product_monitor_configs")
+@Table(name = "monitor_configs")
 @Data
-public class ProductMonitorConfig {
+public class MonitorConfig {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +28,7 @@ public class ProductMonitorConfig {
     private String productName;
 
     @Column(name = "log_path", nullable = false, length = 1000)
-    private String path;
+    private String logPath;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "response_format", nullable = false, length = 20)
@@ -49,6 +51,21 @@ public class ProductMonitorConfig {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    // From ResponseConfig
+    @Column(name = "response_name", nullable = false)
+    private String responseName;
+
+    @Column(name = "response_template", columnDefinition = "TEXT", nullable = false)
+    private String responseTemplate;
+
+    @Column(name = "response_description", columnDefinition = "TEXT")
+    private String responseDescription;
+
+    // SSH Config Relationship
+    @ManyToOne
+    @JoinColumn(name = "ssh_config_id")
+    private SSHConfig sshConfig;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

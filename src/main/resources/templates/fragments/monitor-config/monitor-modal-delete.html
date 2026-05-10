@@ -3,19 +3,19 @@
 
 <body>
 
-    <div th:fragment="deleteResponseConfigModal" class="modal fade" id="deleteResponseConfigModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+    <div th:fragment="deleteModal" class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Hapus Konfigurasi Response</h5>
+                    <h5 class="modal-title">Konfirmasi Hapus</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Yakin ingin menghapus konfigurasi response <strong id="deleteResponseConfigName">-</strong>?</p>
+                    Apakah Anda yakin ingin menghapus konfigurasi monitor "<span id="deleteConfigName"></span>"?
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" id="confirmDeleteResponseConfigButton" class="btn btn-danger">Hapus</button>
+                    <button type="button" id="confirmDeleteButton" class="btn btn-danger">Hapus</button>
                 </div>
             </div>
         </div>

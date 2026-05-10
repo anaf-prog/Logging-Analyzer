@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+    <div th:fragment="testResponseModal" class="modal fade" id="testResponseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Test Response Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="testSampleData" class="form-label">Sample Data (JSON)</label>
+                        <textarea id="testSampleData" class="form-control" rows="4">
+                            {
+                                "status": "success",
+                                "message": "Test message",
+                                "data": {
+                                    "code": "0000",
+                                    "timestamp": "2024-01-01T12:00:00"
+                                }
+                            }
+                        </textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="testResult" class="form-label">Generated Response</label>
+                        <textarea id="testResult" class="form-control" rows="8" readonly></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" id="runTestButton" class="btn btn-primary">Test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

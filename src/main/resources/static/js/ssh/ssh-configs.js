@@ -3,6 +3,7 @@ let deleteSshConfigTarget = null;
 let deleteSshConfigModal = null;
 let sshTestStatusTimeoutId = null;
 let sshTestMessageTimeoutId = null;
+const DEFAULT_LOG_PATH = '/var/log/app.log';
 
 const SSH_TEST_STATUS = {
     success: {
@@ -97,7 +98,7 @@ function renderSshConfigsTable(configs) {
     if (!configs || configs.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell();
-        cell.colSpan = 7;
+        cell.colSpan = 6;
         cell.textContent = 'Belum ada konfigurasi SSH';
         cell.className = 'text-center text-muted';
         return;
@@ -109,7 +110,6 @@ function renderSshConfigsTable(configs) {
         row.insertCell().textContent = config.host || '-';
         row.insertCell().textContent = config.port || 22;
         row.insertCell().textContent = config.username || '-';
-        row.insertCell().textContent = config.logPath || '-';
 
         const statusCell = row.insertCell();
         statusCell.textContent = config.enabled ? 'Aktif' : 'Nonaktif';
@@ -208,6 +208,7 @@ function resetSshConfigForm() {
     form.sshConfigId.value = '';
     form.port.value = 22;
     form.enabled.checked = true;
+    form.dataset.existingLogPath = '';
 
     if (cancelButton) {
         cancelButton.classList.add('d-none');
@@ -234,7 +235,7 @@ function startEditSshConfig(config) {
     form.username.value = config.username || '';
     form.password.value = config.password || '';
     form.sudoPassword.value = config.sudoPassword || '';
-    form.logPath.value = config.logPath || '';
+    form.dataset.existingLogPath = config.logPath || '';
     form.enabled.checked = !!config.enabled;
 
     if (cancelButton) {
@@ -263,7 +264,7 @@ function bindSshConfigForm() {
                 username: form.username.value.trim(),
                 password: form.password.value,
                 sudoPassword: form.sudoPassword.value,
-                logPath: form.logPath.value.trim(),
+                logPath: (form.dataset.existingLogPath || DEFAULT_LOG_PATH),
                 enabled: form.enabled.checked
             };
 
@@ -363,3 +364,5 @@ document.addEventListener('DOMContentLoaded', function () {
     bindSshConfigForm();
     setSshTestStatus();
 });
+
+
