@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konfigurasi SSH</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">Log Error Monitor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/ssh-configs">Konfigurasi</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <h1 class="h3 mb-3">Tabel Konfigurasi</h1>
+
+        <div class="card mb-4">
+            <div class="card-header">Form Konfigurasi SSH</div>
+            <div class="card-body">
+                <form id="sshConfigForm" class="row g-3">
+                    <input type="hidden" id="sshConfigId" name="sshConfigId">
+
+                    <div class="col-md-4">
+                        <label for="name" class="form-label">Nama Config</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="host" class="form-label">Host SSH</label>
+                        <input type="text" class="form-control" id="host" name="host" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="port" class="form-label">Port SSH</label>
+                        <input type="number" class="form-control" id="port" name="port" min="1" max="65535" value="22"
+                            required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="username" class="form-label">Username SSH</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="password" class="form-label">Password SSH</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="sudoPassword" class="form-label">Sudo Password SSH</label>
+                        <input type="password" class="form-control" id="sudoPassword" name="sudoPassword">
+                    </div>
+
+                    <div class="col-md-8">
+                        <label for="logPath" class="form-label">Path Log</label>
+                        <input type="text" class="form-control" id="logPath" name="logPath" required>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enabled" name="enabled" checked>
+                            <label class="form-check-label" for="enabled">Enabled</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+                        <button type="button" id="testSshConnectionButton" class="btn btn-outline-info">Test
+                            Koneksi</button>
+                        <button type="submit" id="saveSshConfigButton" class="btn btn-primary">Simpan Config</button>
+                        <button type="button" id="cancelSshEditButton" class="btn btn-outline-secondary d-none">Batal Edit</button>
+                        <span id="sshConfigMessage" class="small text-muted"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Daftar Konfigurasi SSH</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Host</th>
+                                <th>Port</th>
+                                <th>Username</th>
+                                <th>Path Log</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sshConfigsTableBody">
+                            <tr th:if="${#lists.isEmpty(sshConfigs)}">
+                                <td colspan="7" class="text-center text-muted">Belum ada konfigurasi SSH</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Configuration Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Konfigurasi Response</h5>
+                <small class="text-muted">Atur format dan template response sesuai kebutuhan</small>
+            </div>
+            <div class="card-body">
+                <!-- Form Response Config -->
+                <form id="responseConfigForm" class="mb-4">
+                    <input type="hidden" id="responseConfigId" name="responseConfigId">
+        
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="responseName" class="form-label">Nama Response Config *</label>
+                            <input type="text" class="form-control" id="responseName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="responseFormat" class="form-label">Format Response *</label>
+                            <select class="form-select" id="responseFormat" required>
+                                <option value="JSON">JSON</option>
+                                <option value="XML">XML</option>
+                            </select>
+                        </div>
+                    </div>
+        
+                    <div class="mb-3">
+                        <label for="responseDescription" class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="responseDescription" rows="2"></textarea>
+                    </div>
+        
+                    <div class="mb-3">
+                        <label for="responseTemplate" class="form-label">Template Response *</label>
+                        <textarea id="responseTemplate" class="form-control" rows="10" required></textarea>
+                    </div>
+        
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" id="testResponseButton" class="btn btn-outline-info">Test Template</button>
+                        <button type="button" id="saveResponseConfigButton" class="btn btn-primary">Simpan Config</button>
+                        <button type="button" id="cancelResponseEditButton" class="btn btn-outline-secondary d-none">Batal Edit</button>
+                        <button type="button" id="exampleJsonButton" class="btn btn-outline-success">Contoh Format JSON</button>
+                        <button type="button" id="exampleXmlButton" class="btn btn-outline-warning">Contoh Format XML</button>              
+                    </div>
+                    <div id="responseConfigMessage" class="mt-2 small"></div>
+                </form>
+        
+                <!-- Daftar Response Config -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Format</th>
+                                <th class="text-center">Format Response</th> 
+                                <th>Deskripsi</th>
+                                <th>Created</th>
+                                <th>Updated</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="responseConfigsTableBody">
+                            <tr th:if="${#lists.isEmpty(responseConfigs)}">
+                                <td colspan="7" class="text-center text-muted">Belum ada konfigurasi response</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Delete SSH Config Modal -->
+    <div th:replace="~{fragments/ssh/ssh-delete-modal :: deleteSshConfigModal}"></div>
+
+    <!-- Test Response Modal -->
+    <div th:replace="~{fragments/ssh/test-response-modal :: testResponseModal}"></div>
+    
+    <!-- Delete Modal untuk Response Config -->
+    <div th:replace="~{fragments/ssh/delete-response-config-modal :: deleteResponseConfigModal}"></div>
+
+    <!-- Modal Contoh Format JSON -->
+    <div th:replace="~{fragments/ssh/example-json-modal :: exampleJsonModal}"></div>
+
+    <!-- Modal Contoh Format XML -->
+    <div th:replace="~{fragments/ssh/example-xml-modal :: exampleXmlModal}"></div>
+    
+    <!-- Modal Format Response -->
+    <div th:replace="~{fragments/ssh/format-response-modal :: formatResponseModal}"></div>
+    
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        window.serverSshConfigs = /*[[${sshConfigs}]]*/[];
+        window.serverResponseConfigs = /*[[${responseConfigs}]]*/[];
+        /*]]>*/
+    </script>
+    <script src="/js/ssh/ssh-configs.js?v=2" defer></script>
+    <script src="/js/ssh/response-config-manager.js?v=1" defer></script>
+    <script src="/js/ssh/response-config-ui.js?v=1" defer></script>
+    <script src="/js/ssh/response-config-helper.js?v=1" defer></script>
+    <script src="/js/ssh/response-configs.js?v=2" defer></script>
+</body>
+
+</html>
