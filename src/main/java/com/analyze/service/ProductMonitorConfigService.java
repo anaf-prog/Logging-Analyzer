@@ -2,6 +2,8 @@ package com.analyze.service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.analyze.entity.ProductMonitorConfig;
@@ -14,11 +16,8 @@ import com.analyze.repository.ProductMonitorConfigRepository;
 @Service
 public class ProductMonitorConfigService {
 
-    private final ProductMonitorConfigRepository repository;
-
-    public ProductMonitorConfigService(ProductMonitorConfigRepository repository) {
-        this.repository = repository;
-    }
+    @Autowired
+    private ProductMonitorConfigRepository repository;
 
     /**
      * Mengambil semua konfigurasi monitor produk.

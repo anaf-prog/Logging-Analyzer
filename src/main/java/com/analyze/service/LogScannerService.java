@@ -50,7 +50,6 @@ public class LogScannerService {
 
     @Scheduled(fixedDelay = 5000)
     public void scanAndProcess() {
-        log.debug("============= Start Scanning Folder ================");
         List<ProductMonitorConfig> configs = productMonitorConfigService.getEnabledConfigs();
 
         for (ProductMonitorConfig config : configs) {
